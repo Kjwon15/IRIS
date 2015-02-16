@@ -7,10 +7,7 @@ import org.projectfloodlight.openflow.protocol.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author kjwon15
@@ -96,6 +93,12 @@ public class OFMAuthManager extends OFModule {
         SwitchInfo switchInfo = unauthenticatedSwitches.get(conn);
         if (switchInfo == null) {
             return true;
+        }
+
+        OFAuthReply authReply = (OFAuthReply) msg;
+        if (Arrays.equals(authReply.getData(), AUTH_DATA)) {
+            conn.close();
+            return false;
         }
 
         switchInfo.setAuthenticated();
