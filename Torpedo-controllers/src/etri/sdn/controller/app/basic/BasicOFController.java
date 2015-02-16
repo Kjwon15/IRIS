@@ -3,6 +3,7 @@ package etri.sdn.controller.app.basic;
 import java.util.LinkedList;
 import java.util.List;
 
+import etri.sdn.controller.module.authmanager.OFMAuthManager;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFType;
 
@@ -37,15 +38,16 @@ public class BasicOFController extends OFController {
 	private OFMStaticFlowEntryManager m_staticflow = new OFMStaticFlowEntryManager();
 	private OFMNetFailover m_netfailover = new OFMNetFailover();
 	private OFMConnectionMonitor m_connection_monitor = new OFMConnectionMonitor();
+    private OFMAuthManager m_auth_manager = new OFMAuthManager();
 	
 	private OFModule[] packet_in_pipeline = { 
-			m_link_discovery, 
+			m_link_discovery,
 			m_topology_manager,
 			m_entity_classifier, 
 			m_device_manager,
 			m_firewall,
 			m_forwarding,
-			m_connection_monitor
+			m_connection_monitor,
 	};
 
 	public BasicOFController(int num_of_queue, String role) {
@@ -57,6 +59,7 @@ public class BasicOFController extends OFController {
 	 */
 	@Override
 	public void init() {
+        m_auth_manager.init(this);
 		m_link_discovery.init(this);
 		m_topology_manager.init(this);
 		m_entity_classifier.init(this);
@@ -103,15 +106,17 @@ public class BasicOFController extends OFController {
 			}
 		}
 		else if ( t == OFType.FEATURES_REPLY ) {
+            m_auth_manager.processHandshakeFinished(conn, context);
 			return m_link_discovery.processHandshakeFinished( conn, context );
 		}
 		else if ( t == OFType.ECHO_REPLY ) {
 			List<OFMessage> out = new LinkedList<OFMessage>();
 			return m_connection_monitor.processMessage ( conn, context, m, out );
 		}
-//		else {
-//			System.err.println("Unhandled OF message: "	+ m.toString());
-//		}
+		else if (t == OFType.EXPERIMENTER) {
+            List<OFMessage> out = new LinkedList<OFMessage>();
+            return m_auth_manager.processMessage(conn, context, m, out);
+		}
 		return true;
 	}
 }

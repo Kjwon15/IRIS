@@ -11,6 +11,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.HashSet;
 import java.util.Set;
 
+import etri.sdn.controller.module.authmanager.OFMAuthManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,7 +182,7 @@ public class Main {
 						to_load.init();
 						to_load.startModules();
 						to_load.start();
-						
+
 						tcp_server.registerController(to_load);
 						
 						// retrieve models and register them to rest_api_server.

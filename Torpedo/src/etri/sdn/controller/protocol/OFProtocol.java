@@ -342,9 +342,6 @@ public class OFProtocol {
 			// send feature request message.
 			OFFeaturesRequest freq = OFFactories.getFactory(m.getVersion()).featuresRequest();
 			conn.write(freq);
-
-            OFAuthRequest authRequest = OFFactories.getFactory(m.getVersion()).authRequest("TEST".getBytes());
-            conn.write(authRequest);
 			break;
 
 		case ERROR:		
@@ -508,17 +505,6 @@ public class OFProtocol {
 				return false;
 			}
 			break;
-
-        case EXPERIMENTER:
-            m.getVersion();
-            if (m instanceof OFAuthReply) {
-                OFAuthReply authReply = (OFAuthReply) m;
-                if (Arrays.equals(authReply.getData(), "TEST".getBytes())) {
-                    // TODO: register trusted switch.
-
-                }
-            }
-            break;
 
 		default:
 			if ( !getController().handleGeneric(conn, context, m) ) {
