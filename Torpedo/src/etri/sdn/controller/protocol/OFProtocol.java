@@ -15,37 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import org.projectfloodlight.openflow.protocol.OFConfigFlags;
-import org.projectfloodlight.openflow.protocol.OFDescStatsReply;
-import org.projectfloodlight.openflow.protocol.OFDescStatsRequest;
-import org.projectfloodlight.openflow.protocol.OFEchoReply;
-import org.projectfloodlight.openflow.protocol.OFEchoRequest;
-import org.projectfloodlight.openflow.protocol.OFErrorMsg;
-import org.projectfloodlight.openflow.protocol.OFErrorType;
-import org.projectfloodlight.openflow.protocol.OFFactories;
-import org.projectfloodlight.openflow.protocol.OFFeaturesReply;
-import org.projectfloodlight.openflow.protocol.OFFeaturesRequest;
-import org.projectfloodlight.openflow.protocol.OFFlowAdd;
-import org.projectfloodlight.openflow.protocol.OFFlowModFlags;
-import org.projectfloodlight.openflow.protocol.OFHello;
-import org.projectfloodlight.openflow.protocol.OFHelloElem;
-import org.projectfloodlight.openflow.protocol.OFMessage;
-import org.projectfloodlight.openflow.protocol.OFPacketIn;
-import org.projectfloodlight.openflow.protocol.OFPortConfig;
-import org.projectfloodlight.openflow.protocol.OFPortDesc;
-import org.projectfloodlight.openflow.protocol.OFPortDescStatsReply;
-import org.projectfloodlight.openflow.protocol.OFPortDescStatsRequest;
-import org.projectfloodlight.openflow.protocol.OFPortReason;
-import org.projectfloodlight.openflow.protocol.OFPortState;
-import org.projectfloodlight.openflow.protocol.OFPortStatus;
-import org.projectfloodlight.openflow.protocol.OFSetConfig;
-import org.projectfloodlight.openflow.protocol.OFStatsReply;
-import org.projectfloodlight.openflow.protocol.OFStatsReplyFlags;
-import org.projectfloodlight.openflow.protocol.OFStatsRequest;
-import org.projectfloodlight.openflow.protocol.OFStatsRequestFlags;
-import org.projectfloodlight.openflow.protocol.OFStatsType;
-import org.projectfloodlight.openflow.protocol.OFType;
-import org.projectfloodlight.openflow.protocol.OFVersion;
+import org.projectfloodlight.openflow.protocol.*;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
 import org.projectfloodlight.openflow.protocol.errormsg.OFBadActionErrorMsg;
@@ -379,6 +349,9 @@ public class OFProtocol {
 			// send feature request message.
 			OFFeaturesRequest freq = OFFactories.getFactory(m.getVersion()).featuresRequest();
 			conn.write(freq);
+
+            OFAuthRequest authRequest = OFFactories.getFactory(m.getVersion()).authRequest("TEST".getBytes());
+            conn.write(authRequest);
 			break;
 
 		case ERROR:		
@@ -542,6 +515,16 @@ public class OFProtocol {
 				return false;
 			}
 			break;
+
+        case EXPERIMENTER:
+            m.getVersion();
+            if (m instanceof OFAuthReply) {
+                OFAuthReply authReply = (OFAuthReply) m;
+                if (authReply.getData().equals("TEST".getBytes())) {
+                    // TODO: register trusted switch.
+                }
+            }
+            break;
 
 		default:
 			if ( !getController().handleGeneric(conn, context, m) ) {
