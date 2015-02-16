@@ -4,14 +4,7 @@ package etri.sdn.controller.protocol;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -520,8 +513,9 @@ public class OFProtocol {
             m.getVersion();
             if (m instanceof OFAuthReply) {
                 OFAuthReply authReply = (OFAuthReply) m;
-                if (authReply.getData().equals("TEST".getBytes())) {
+                if (Arrays.equals(authReply.getData(), "TEST".getBytes())) {
                     // TODO: register trusted switch.
+
                 }
             }
             break;
