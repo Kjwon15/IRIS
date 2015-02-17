@@ -76,6 +76,9 @@ public class OFMAuthManager extends OFModule {
             logger.info("Duplicated DPID with authenticated switch!");
         } else {
             // replace switch.
+            if (existingSwitchInfo != null) {
+                existingSwitchInfo.connection.close();
+            }
             existingSwitches.put(dpid, newSwitchInfo);
             unauthenticatedSwitches.put(conn, newSwitchInfo);
         }
