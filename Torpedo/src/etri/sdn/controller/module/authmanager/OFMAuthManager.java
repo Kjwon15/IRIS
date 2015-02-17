@@ -96,7 +96,7 @@ public class OFMAuthManager extends OFModule {
         }
 
         OFAuthReply authReply = (OFAuthReply) msg;
-        if (Arrays.equals(authReply.getData(), AUTH_DATA)) {
+        if (!Arrays.equals(authReply.getData(), AUTH_DATA)) {
             conn.close();
             return false;
         }
