@@ -69,7 +69,7 @@ public class OFMAuthManager extends OFModule {
         OFAuthRequest authRequest = OFFactories.getFactory(version).authRequest(authData);
 
         // FIXME: This algorithm is very dangerous.
-        swInfo.lastAuthMsg = authData;
+        swInfo.authMsgs.put(authRequest.getXid(), authData);
         swInfo.connection.write(authRequest);
         logger.debug("Auth request {}", swInfo.iofSwitch.getStringId());
     }
@@ -114,10 +114,12 @@ public class OFMAuthManager extends OFModule {
         OFAuthReply authReply = (OFAuthReply) msg;
         try {
             MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
-            if (Arrays.equals(sha1.digest(switchInfo.lastAuthMsg), authReply.getData())) {
+            byte[] data = switchInfo.authMsgs.get(authReply.getXid());
+            if (Arrays.equals(sha1.digest(data), authReply.getData())) {
                 switchInfo.lastAuthenticated = DateTime.now();
                 unauthenticatedSwitches.remove(conn);
-            }else {
+                switchInfo.authMsgs.remove(authReply.getXid());
+            } else {
                 logger.warn("Authentication failed {}", sw.getStringId());
                 conn.close();
                 return false;

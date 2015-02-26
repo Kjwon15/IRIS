@@ -4,6 +4,8 @@ import etri.sdn.controller.protocol.io.Connection;
 import etri.sdn.controller.protocol.io.IOFSwitch;
 import org.joda.time.DateTime;
 
+import java.util.HashMap;
+
 /**
  * @author kjwon15
  * @created 15. 2. 16
@@ -12,7 +14,7 @@ public class SwitchInfo {
     boolean isAuthenticated;
     IOFSwitch iofSwitch;
     Connection connection;
-    byte[] lastAuthMsg;
+    HashMap<Long, byte[]> authMsgs = new HashMap<>();
     DateTime lastAuthenticated = DateTime.now();
 
     public SwitchInfo(IOFSwitch iofSwitch) {
