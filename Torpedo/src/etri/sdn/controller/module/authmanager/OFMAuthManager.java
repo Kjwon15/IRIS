@@ -40,8 +40,8 @@ import java.util.TimerTask;
  */
 public class OFMAuthManager extends OFModule {
 
-    HashMap<Long, SwitchInfo> existingSwitches;
-    HashMap<Connection, SwitchInfo> unauthenticatedSwitches;
+    final HashMap<Long, SwitchInfo> existingSwitches = new HashMap<>();
+    final HashMap<Connection, SwitchInfo> unauthenticatedSwitches = new HashMap<>();
     Timer scheduler;
 
     private static final Logger logger = LoggerFactory.getLogger(OFMAuthManager.class);
@@ -58,8 +58,8 @@ public class OFMAuthManager extends OFModule {
     @Override
     protected void initialize() {
 
-        existingSwitches = new HashMap<>();
-        unauthenticatedSwitches = new HashMap<>();
+        existingSwitches.clear();
+        unauthenticatedSwitches.clear();
 
         for (IOFSwitch iofSwitch : getController().getSwitches()) {
             SwitchInfo sw = new SwitchInfo(iofSwitch);
