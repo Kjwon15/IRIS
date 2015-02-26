@@ -58,7 +58,7 @@ public class OFMAuthManager extends OFModule {
         OFVersion version = conn.getSwitch().getVersion();
         OFAuthRequest authRequest = OFFactories.getFactory(version).authRequest(AUTH_DATA);
         conn.write(authRequest);
-        logger.info("Auth request");
+        logger.debug("Auth request {}", conn.getSwitch().getStringId());
     }
 
     @Override
@@ -73,7 +73,7 @@ public class OFMAuthManager extends OFModule {
 
             getController().addSwitch(dpid, existingSwitchInfo.iofSwitch);
             unauthenticatedSwitches.put(conn, newSwitchInfo);
-            logger.info("Duplicated DPID with authenticated switch!");
+            logger.warn("Duplicated DPID with authenticated switch! {}", newSwitch.getStringId());
         } else {
             // replace switch.
             if (existingSwitchInfo != null) {
@@ -108,7 +108,7 @@ public class OFMAuthManager extends OFModule {
         // Overwrite.
         existingSwitches.put(dpid, switchInfo);
 
-        logger.info("Got auth reply");
+        logger.debug("Got auth reply {}", sw.getStringId());
 
         return true;
     }
@@ -122,7 +122,7 @@ public class OFMAuthManager extends OFModule {
         if (existingSwitch != null && existingSwitch.iofSwitch.getConnection() == conn) {
             existingSwitches.remove(dpid);
         }
-        logger.info("Disconnect holding switch");
+        logger.info("Disconnect holding switch {}", conn.getSwitch().getStringId());
         return true;
     }
 
