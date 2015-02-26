@@ -40,8 +40,6 @@ import java.util.TimerTask;
  */
 public class OFMAuthManager extends OFModule {
 
-    private static final byte[] AUTH_DATA = "TEST".getBytes();
-
     HashMap<Long, SwitchInfo> existingSwitches;
     HashMap<Connection, SwitchInfo> unauthenticatedSwitches;
     Timer scheduler;
@@ -79,11 +77,14 @@ public class OFMAuthManager extends OFModule {
         });
     }
 
-    private void authRequest(Connection conn) {
-        OFVersion version = conn.getSwitch().getVersion();
-        OFAuthRequest authRequest = OFFactories.getFactory(version).authRequest(AUTH_DATA);
-        conn.write(authRequest);
-        logger.debug("Auth request {}", conn.getSwitch().getStringId());
+    private void authRequest(SwitchInfo swInfo) {
+        OFVersion version = swInfo.iofSwitch.getVersion();
+        byte[] authData = new byte[]{(byte) System.currentTimeMillis(), (byte) swInfo.iofSwitch.getId()};
+        OFAuthRequest authRequest = OFFactories.getFactory(version).authRequest(authData);
+
+        swInfo.lastAuthMsg = authData;
+        swInfo.connection.write(authRequest);
+        logger.debug("Auth request {}", swInfo.iofSwitch.getStringId());
     }
 
     @Override
@@ -106,7 +107,7 @@ public class OFMAuthManager extends OFModule {
             }
             existingSwitches.put(dpid, newSwitchInfo);
             unauthenticatedSwitches.put(conn, newSwitchInfo);
-            authRequest(conn);
+            authRequest(newSwitchInfo);
         }
 
         return true;
@@ -126,10 +127,11 @@ public class OFMAuthManager extends OFModule {
         OFAuthReply authReply = (OFAuthReply) msg;
         try {
             MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
-            if (Arrays.equals(sha1.digest(AUTH_DATA), authReply.getData())) {
+            if (Arrays.equals(sha1.digest(switchInfo.lastAuthMsg), authReply.getData())) {
                 switchInfo.lastAuthenticated = DateTime.now();
                 unauthenticatedSwitches.remove(conn);
             }else {
+                logger.warn("Authentication failed {}", sw.getStringId());
                 conn.close();
                 return false;
             }
@@ -182,7 +184,7 @@ public class OFMAuthManager extends OFModule {
                     continue;
                 }
 
-                authRequest(swInfo.connection);
+                authRequest(swInfo);
             }
         }
 

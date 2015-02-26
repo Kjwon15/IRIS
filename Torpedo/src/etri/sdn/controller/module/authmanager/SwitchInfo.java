@@ -12,6 +12,7 @@ public class SwitchInfo {
     boolean isAuthenticated;
     IOFSwitch iofSwitch;
     Connection connection;
+    byte[] lastAuthMsg;
     DateTime lastAuthenticated = DateTime.now();
 
     public SwitchInfo(IOFSwitch iofSwitch) {
