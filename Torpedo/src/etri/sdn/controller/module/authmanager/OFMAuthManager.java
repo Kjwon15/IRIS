@@ -82,6 +82,7 @@ public class OFMAuthManager extends OFModule {
         byte[] authData = new byte[]{(byte) System.currentTimeMillis(), (byte) swInfo.iofSwitch.getId()};
         OFAuthRequest authRequest = OFFactories.getFactory(version).authRequest(authData);
 
+        // FIXME: This algorithm is very dangerous.
         swInfo.lastAuthMsg = authData;
         swInfo.connection.write(authRequest);
         logger.debug("Auth request {}", swInfo.iofSwitch.getStringId());
