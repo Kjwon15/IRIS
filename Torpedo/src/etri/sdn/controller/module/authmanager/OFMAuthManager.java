@@ -1,32 +1,18 @@
 package etri.sdn.controller.module.authmanager;
 
-import etri.sdn.controller.IService;
-import etri.sdn.controller.MessageContext;
-import etri.sdn.controller.OFMFilter;
-import etri.sdn.controller.OFModel;
-import etri.sdn.controller.OFModule;
+import etri.sdn.controller.*;
 import etri.sdn.controller.protocol.io.Connection;
 import etri.sdn.controller.protocol.io.IOFSwitch;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
-import org.projectfloodlight.openflow.protocol.OFAuthReply;
-import org.projectfloodlight.openflow.protocol.OFAuthRequest;
-import org.projectfloodlight.openflow.protocol.OFFactories;
-import org.projectfloodlight.openflow.protocol.OFMessage;
-import org.projectfloodlight.openflow.protocol.OFType;
-import org.projectfloodlight.openflow.protocol.OFVersion;
+import org.projectfloodlight.openflow.protocol.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author kjwon15
@@ -40,7 +26,7 @@ import java.util.TimerTask;
  */
 public class OFMAuthManager extends OFModule {
 
-    final HashMap<Long, SwitchInfo> existingSwitches = new HashMap<>();
+    final ConcurrentHashMap<Long, SwitchInfo> existingSwitches = new ConcurrentHashMap<>();
     final HashMap<Connection, SwitchInfo> unauthenticatedSwitches = new HashMap<>();
     Timer scheduler;
 
@@ -179,9 +165,7 @@ public class OFMAuthManager extends OFModule {
                 if (comparePeriod(p, timeout) > 0) {
                     logger.info("Timed out {}", swInfo.iofSwitch.getStringId());
                     swInfo.connection.close();
-                    synchronized (existingSwitches) {
-                        existingSwitches.remove(swInfo.iofSwitch.getId());
-                    }
+                    existingSwitches.remove(swInfo.iofSwitch.getId());
                     continue;
                 }
 
