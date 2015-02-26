@@ -1,13 +1,32 @@
 package etri.sdn.controller.module.authmanager;
 
-import etri.sdn.controller.*;
+import etri.sdn.controller.IService;
+import etri.sdn.controller.MessageContext;
+import etri.sdn.controller.OFMFilter;
+import etri.sdn.controller.OFModel;
+import etri.sdn.controller.OFModule;
 import etri.sdn.controller.protocol.io.Connection;
 import etri.sdn.controller.protocol.io.IOFSwitch;
-import org.projectfloodlight.openflow.protocol.*;
+import org.joda.time.DateTime;
+import org.joda.time.Period;
+import org.projectfloodlight.openflow.protocol.OFAuthReply;
+import org.projectfloodlight.openflow.protocol.OFAuthRequest;
+import org.projectfloodlight.openflow.protocol.OFFactories;
+import org.projectfloodlight.openflow.protocol.OFMessage;
+import org.projectfloodlight.openflow.protocol.OFType;
+import org.projectfloodlight.openflow.protocol.OFVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * @author kjwon15
@@ -25,8 +44,12 @@ public class OFMAuthManager extends OFModule {
 
     HashMap<Long, SwitchInfo> existingSwitches;
     HashMap<Connection, SwitchInfo> unauthenticatedSwitches;
+    Timer scheduler;
 
     private static final Logger logger = LoggerFactory.getLogger(OFMAuthManager.class);
+
+    private static final long PERIOD = 1000;
+    private static final long TIMEOUT = PERIOD * 5;
 
 
     @Override
@@ -43,8 +66,10 @@ public class OFMAuthManager extends OFModule {
         for (IOFSwitch iofSwitch : getController().getSwitches()) {
             SwitchInfo sw = new SwitchInfo(iofSwitch);
             existingSwitches.put(iofSwitch.getId(), sw);
-            authRequest(iofSwitch.getConnection());
         }
+
+        scheduler = new Timer();
+        scheduler.scheduleAtFixedRate(new AuthScheduler(), 0, PERIOD);
 
         registerFilter(OFType.EXPERIMENTER, new OFMFilter() {
             @Override
@@ -81,9 +106,9 @@ public class OFMAuthManager extends OFModule {
             }
             existingSwitches.put(dpid, newSwitchInfo);
             unauthenticatedSwitches.put(conn, newSwitchInfo);
+            authRequest(conn);
         }
 
-        authRequest(conn);
         return true;
     }
 
@@ -95,12 +120,21 @@ public class OFMAuthManager extends OFModule {
 
         SwitchInfo switchInfo = unauthenticatedSwitches.get(conn);
         if (switchInfo == null) {
-            return true;
+            switchInfo = existingSwitches.get(dpid);
         }
 
         OFAuthReply authReply = (OFAuthReply) msg;
-        if (!Arrays.equals(authReply.getData(), AUTH_DATA)) {
-            conn.close();
+        try {
+            MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+            if (Arrays.equals(sha1.digest(AUTH_DATA), authReply.getData())) {
+                switchInfo.lastAuthenticated = DateTime.now();
+                unauthenticatedSwitches.remove(conn);
+            }else {
+                conn.close();
+                return false;
+            }
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
             return false;
         }
 
@@ -129,5 +163,47 @@ public class OFMAuthManager extends OFModule {
     @Override
     public OFModel[] getModels() {
         return null;
+    }
+
+    private class AuthScheduler extends TimerTask {
+        Period timeout = new Period(TIMEOUT);
+
+        @Override
+        public void run() {
+            DateTime now = DateTime.now();
+            for (SwitchInfo swInfo : existingSwitches.values()) {
+                Period p = new Period(swInfo.lastAuthenticated, now);
+                if (comparePeriod(p, timeout) > 0) {
+                    logger.info("Timed out {}", swInfo.iofSwitch.getStringId());
+                    swInfo.connection.close();
+                    synchronized (existingSwitches) {
+                        existingSwitches.remove(swInfo.iofSwitch.getId());
+                    }
+                    continue;
+                }
+
+                authRequest(swInfo.connection);
+            }
+        }
+
+        int comparePeriod(Period p1, Period p2) {
+            int[] v1 = p1.getValues();
+            int[] v2 = p2.getValues();
+            assert v1.length == v2.length;
+
+            for (int i = 0; i < v1.length; i++) {
+                if (v1[i] == v2[i]) {
+                    continue;
+                }
+
+                if (v1[i] > v2[i]) {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            }
+
+            return 0;
+        }
     }
 }
