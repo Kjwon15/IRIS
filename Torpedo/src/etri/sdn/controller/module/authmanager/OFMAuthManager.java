@@ -32,8 +32,8 @@ public class OFMAuthManager extends OFModule {
 
     private static final Logger logger = LoggerFactory.getLogger(OFMAuthManager.class);
 
-    private static final long PERIOD = 1000;
-    private static final long TIMEOUT = PERIOD * 5;
+    private static long period = 1024;
+    private static final long TIMEOUT = 1000000;
 
 
     @Override
@@ -52,8 +52,12 @@ public class OFMAuthManager extends OFModule {
             existingSwitches.put(iofSwitch.getId(), sw);
         }
 
+        period =TorpedoProperties.loadConfiguration().getInt("auth-period");
+
+        logger.info("Auth manager with period {}", period);
+
         scheduler = new Timer();
-        scheduler.scheduleAtFixedRate(new AuthScheduler(), 0, PERIOD);
+        scheduler.scheduleAtFixedRate(new AuthScheduler(), 0, period);
 
         registerFilter(OFType.EXPERIMENTER, new OFMFilter() {
             @Override
