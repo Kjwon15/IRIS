@@ -117,9 +117,9 @@ public class OFMAuthManager extends OFModule {
 
         OFAuthReply authReply = (OFAuthReply) msg;
         try {
-            MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+            MessageDigest md5 = MessageDigest.getInstance("MD5");
             byte[] data = switchInfo.authMsgs.get(authReply.getXid());
-            if (Arrays.equals(sha1.digest(data), authReply.getData())) {
+            if (Arrays.equals(md5.digest(data), authReply.getData())) {
                 switchInfo.lastAuthenticated = DateTime.now();
                 unauthenticatedSwitches.remove(conn);
                 switchInfo.authMsgs.remove(authReply.getXid());
